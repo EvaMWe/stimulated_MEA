@@ -7,9 +7,9 @@
 % NEW: calculation of the mean firing rate (MFR)
 % sum(Msp/binSmall)/nbBins
 
-function [MFRList,MFRSA] = StimAnalysis_SA_MFR(baseInfo,StimInfo,SAInfo,basePath,StimPath,validList, validWells, MFRstore,varargin)
-binAll = 1000; %[in msec]
-binSmall = 8;%[in msec]
+function [MFRList,MFRSA,MFRev,Ampl] = StimAnalysis_SA_MFR(baseInfo,StimInfo,SAInfo,basePath,StimPath,validList, validWells, MFRstore,varargin)
+binAll = 150; %[in msec]
+binSmall = 5;%[in msec]
 discard_NonStim = 0;
 
 if nargin == 9
@@ -52,7 +52,7 @@ for stim = 1:nbstim
     StimData = AxisFile(fullfile(StimPath,StimInfo{stim}));
     StimEvents = sort([StimData.StimulationEvents(:).EventTime]);
     StimEvents = StimEvents.*1000; %in ms; %=time stamps of stimulation events
-    [nameStimEl, ~] = generateElectrodeName(StimData); % name od stimulating electrode
+%    [nameStimEl, ~] = generateElectrodeName(StimData); % name od stimulating electrode
     
     TimeWindows = repmat(StimEvents',1,binAll/binSmall+1);
     intervals = 0:binSmall:binAll;
@@ -88,17 +88,29 @@ end
 MFRvalues = MFRvalues.*1000; %in sec 
 
 MFRrel = MFRvalues./MFRstore;
+Amplitude = MFRvalues-MFRstore;  %difference between evoked and spontaneous activity (base)
 
-MFRcell_rel = cell(4,nbEl);
+MFRcell_rel = cell(nbstim+1,nbEl);
 MFRcell_rel(1,:) = validListred;
 MFRcell_rel(2:end,:) = num2cell(MFRrel);
 
-MFRcell_SA = cell(4,nbEl);
+MFRcell_ev = cell(nbstim+1,nbEl);
+MFRcell_ev(1,:) = validListred;
+MFRcell_ev(2:end,:) = num2cell(MFRvalues);
+
+MFRcell_SA = cell(nbstim+1,nbEl);
 MFRcell_SA(1,:) = validListred;
 MFRcell_SA(2:end,:) = num2cell(MFRstore);
 
+
+MFRcell_amp = cell(nbstim+1,nbEl);
+MFRcell_amp(1,:) = validListred;
+MFRcell_amp(2:end,:) = num2cell(Amplitude);
+
 [MFRList, ~] = getWells(MFRcell_rel, -1, validWells);
 [MFRSA, ~] = getWells(MFRcell_SA, -1, validWells);
+[MFRev, ~] = getWells(MFRcell_ev, -1, validWells);
+[Ampl, ~] = getWells(MFRcell_amp, -1, validWells);
  
 
 end

@@ -7,7 +7,7 @@
 % NEW: calculation of the mean firing rate (MFR)
 % sum(Msp/binSmall)/nbBins
 
-function [MFRList,MFRSA] = StimAnalysis_oneStim(baseInfo,StimInfo,SAInfo,basePath,StimPath,validList, validWells, MFRstore,varargin)
+function [MFRList] = StimAnalysis_noNorm(baseInfo,StimInfo,basePath,StimPath,validList, validWells, nbstim, varargin)
 binAll = 1000; %[in msec]
 binSmall = 8;%[in msec]
 discard_NonStim = 0;
@@ -17,7 +17,7 @@ if nargin == 9
 end
 
 
-nbstim = length(SAInfo); %should be 3 here
+
 
 
 %% (2) get Stimulation information
@@ -29,7 +29,7 @@ StimData = AxisFile(fullfile(StimPath,StimInfo{1}));
 reduce = cellfun(@(c)strcmp(c,validList),nameStimEl,'UniformOutput',false);
 reduce = sum(vertcat(reduce{:}),1);
 validListred = validList(reduce == 0);
-MFRstore = MFRstore(:,reduce == 0);
+
 
 %% reduce wellList by discarding wells without stimulations
 % MFR liste muss noch angepasst werden, für diese Option
@@ -40,19 +40,19 @@ if discard_NonStim == 0
     validWells = wellListred(1,:);
 end
 
-nbEl = size(MFRstore,2);
+nbEl = size(validListred,2);
 currNbWell = size(validWells,2);
 % dataStim = cell(currNbWell,nbstim);
 % dataMFRvalues = cell(nbEl,nbstim);
 
 
 %% (3) calcualtion
-MFRvalues = zeros(1,nbEl);
-
-    StimData = AxisFile(fullfile(StimPath,StimInfo{1}));
+MFRvalues = zeros(nbstim,nbEl);
+for stim = 1:nbstim
+    StimData = AxisFile(fullfile(StimPath,StimInfo{stim}));
     StimEvents = sort([StimData.StimulationEvents(:).EventTime]);
     StimEvents = StimEvents.*1000; %in ms; %=time stamps of stimulation events
-%     [nameStimEl, ~] = generateElectrodeName(StimData); % name od stimulating electrode
+%    [nameStimEl, ~] = generateElectrodeName(StimData); % name od stimulating electrode
     
     TimeWindows = repmat(StimEvents',1,binAll/binSmall+1);
     intervals = 0:binSmall:binAll;
@@ -60,7 +60,7 @@ MFRvalues = zeros(1,nbEl);
     TimeWindows = TimeWindows + intervals;
 
       
-    spikeList = getList('nameList',validListred,'folder',basePath,'file',baseInfo{1});
+    spikeList = getList('nameList',validListred,'folder',basePath,'file',baseInfo{stim});
     
     spikeData = spikeList.data;
     
@@ -83,22 +83,22 @@ MFRvalues = zeros(1,nbEl);
         end
     end   
     MFRevoke = sum(((dataArray./nbStim)./binSmall),2)./nbBin;    %in msec
-    MFRvalues(1,:) = MFRevoke; %for each stimulation (row) for each electrode
-
+    MFRvalues(stim,:) = MFRevoke; %for each stimulation (row) for each electrode
+end
 MFRvalues = MFRvalues.*1000; %in sec 
 
-MFRrel = MFRvalues./MFRstore;
+MFRrel = MFRvalues;
 
-MFRcell_rel = cell(2,nbEl);
+MFRcell_rel = cell(nbstim+1,nbEl);
 MFRcell_rel(1,:) = validListred;
-MFRcell_rel(2,:) = num2cell(MFRrel);
+MFRcell_rel(2:end,:) = num2cell(MFRrel);
 
-MFRcell_SA = cell(2,nbEl);
-MFRcell_SA(1,:) = validListred;
-MFRcell_SA(2,:) = num2cell(MFRstore);
+% MFRcell_SA = cell(nbstim+1,nbEl);
+% MFRcell_SA(1,:) = validListred;
+% MFRcell_SA(2:end,:) = num2cell(MFRstore);
 
 [MFRList, ~] = getWells(MFRcell_rel, -1, validWells);
-[MFRSA, ~] = getWells(MFRcell_SA, -1, validWells);
+% [MFRSA, ~] = getWells(MFRcell_SA, -1, validWells);
  
 
 end

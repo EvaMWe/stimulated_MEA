@@ -1,11 +1,12 @@
 % this function analysis the evoked MFR upon test stimulus (just one)
-% Load one file to get spontaneous activity
-% Here one SA file per STIM File
-%user can select multiple stimulation experiments
-function dataCell =StimRoutine_forTeststim(varargin)
+% in this seting one SA belongs to one Stim file.
+function dataCell =StimRoutine_forTeststim_multi(varargin)
 %% *******************Read In Data:******************************
 %  FILES FOR SPONTANEOUS AVTIVITY and to get valid wells
 %select one file per STIM
+nbSessions = 1; 
+
+
 [SAInfo, SAPath] = uigetfile('*.csv','select files for calculating spontaneous activity',...
      'MultiSelect','on');
 if ~iscell(SAInfo)
@@ -37,8 +38,8 @@ end
 %  listOfGroups = xlsx2mat_grouping('sheetname', 'KRASV_groupedPmouse', 'nbGroups', 6 ,...
 %    'variableNames',{'ms1wT','ms2m','ms3m','ms4wT','ms5_wT','ms6m'});
 %   'ms6Stimm','ms4cm','ms5cwT','ms6cm'}); 
-listOfGroups = xlsx2mat_grouping('sheetname', 'MEA1', 'nbGroups',7 ,...
- 'variableNames',{'CTRL','LSD_10','PSI_10','DMT_90','LSD_1','PSI_1','DMT_9'}); 
+% listOfGroups = xlsx2mat_grouping('sheetname', 'SHP2_groupedPmouse', 'nbGroups',6 ,...
+%  'variableNames',{'ms1wT','ms2SHP2','ms3SHP2','ms4wT','ms5','ms6SHP2'}); 
 %STOP MODIFICATION-PART
 
 nbstim = length(SAInfo);
@@ -56,7 +57,7 @@ listedGroupindex = ismember(validWells,listedWells);
 validWells = validWells(listedGroupindex);
    
    
-nbSessions = length(baseInfo); %equal to length of base Info due to just having one teststimulus
+%equal to length of base Info due to just having one teststimulus
 nbWells = length(validWells);
 %% preallocating
 stimResult=repmat(struct('sessionresults',1),1,nbSessions);
@@ -64,6 +65,7 @@ stimResult=repmat(struct('sessionresults',1),1,nbSessions);
 %% (1) get spontanous activity
 MFRstore = zeros(nbstim,length(validList));
 
+%get MFR from SA
 for c = 1:nbstim
     dataStruct = getList('nameList',validList,'multiSelection','off',...
         'folder',SAPath,'file',SAInfo{c});
@@ -76,19 +78,19 @@ for c = 1:nbstim
     MFRstore(c,:) = MFR;    
 end
 
-MFRdata = cell(2,nbWells,nbSessions); 
-MFRdataSA = cell(2,nbWells,nbSessions);
+MFRdata = cell(2,nbWells,nbStim); 
+MFRdataSA = cell(2,nbWells,nbStim );
 %names = repmat(validWells,1,1,nbSessions);
 
 %% Stimulation analysis
-for s = 1:nbSessions
+for stim = 1:nbStim
 
-    fileData = baseInfo(1,s);
-    fileStim = StimInfo(1,s);
+    fileData = baseInfo(1,stim);
+    fileStim = StimInfo(1,stim);
     
     [MFRrel, MFRSA] = StimAnalysis_oneStim (fileData,fileStim,SAInfo,basePath,StimPath,validList, validWells,MFRstore,1); % 1 = not stim wells are not discarded
-    MFRdata(:,:,s) = MFRrel;  
-    MFRdataSA(:,:,s) = MFRSA;
+    MFRdata(:,:,stim) = MFRrel;  
+    MFRdataSA(:,:,stim) = MFRSA;
       
 end
 
@@ -124,7 +126,7 @@ end
 
 %average over the sessions
 meanMFR_together = mean(containerMFR,3); %averaged data over all sessions, over all electrodes per well
-%meanSD_together = mean(containerSD,3); 
+meanSD_together = mean(containerSD,3); 
 meanCV_together = mean(containerCV,3);
 meanSkew_together = mean(containerskewness,3);
 
@@ -133,7 +135,7 @@ meanSkew_together = mean(containerskewness,3);
 
 dataCell = cell(4,nbWells,3);
 dataCell{1,1,1} = 'mean value';
-dataCell{1,1,2} = 'coefficient of variance';
+dataCell{1,1,2} = 'coefiicient of variance';
 dataCell{1,1,3} = 'skewness';
 
 nbG = size(listOfGroups,2); %number of groups
@@ -163,25 +165,7 @@ for gr = 1:nbG
     count = count+length(wellNam);
 end
 
-[savePath]= uigetdir('','select folder to save data');
-
-cd (savePath)
-
-
-id = 'MATLAB:xlswrite:AddSheet';
-warning('off',id);
-
-filename = 'Stimulation_Results.xlsx';
-
-
-writetable(cell2table(dataCell(:,:,1)),filename,'WriteVariableNames',false,...
-    'Sheet','mean_MFRevoked');
-writetable(cell2table(dataCell(:,:,2)),filename,'WriteVariableNames',false,...
-    'Sheet','CV_MFRevoked');
-writetable(cell2table(dataCell(:,:,3)),filename,'WriteVariableNames',false,...
-    'Sheet','skewness_MFRevoked');
-
-
+%
 
 end
 

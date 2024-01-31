@@ -6,11 +6,10 @@ firstList = getList('instruction','insert baseline files','multiSelection','off'
     'folder',refPath,'file',refInfo); %receive the spike list of baseline
 dataRaw = firstList.data;
 [~,validList, validWells] = cleanData(dataRaw);
-
+cd(refPath)
 %% grouping: get the grouping List from extern
-listOfGroups = xlsx2mat_grouping('sheetname', 'SHP2_009_StimDIV41', 'nbGroups', 12 ,'variableNames',{'ms1Stimm',...
-  'ms2Stimwt','ms3Stimwt','ms1cm','ms2cwt','ms3cwt','ms4Stimm','ms5Stimwt','ms6Stimm',...
-  'ms4cm','ms5cwt','ms6cm'});
+listOfGroups = xlsx2mat_grouping('sheetname', 'MEA1', 'nbGroups', 7 ,'variableNames',{'CTRL',...
+  'LSD_10','PSI_10','DMT_90','LSD_1','PSI_1','DMT_9'});
 nbG = size(listOfGroups,2);
 %maxNbWell = size(listOfGroups,1)-1;
 
